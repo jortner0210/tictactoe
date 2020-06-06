@@ -6,8 +6,8 @@ class Board:
     def __init__(self):
         self.board = [
             { 0: 0 }, { 1: 1 }, { 2: 2 },
-            { 3: 0 }, { 4: 4 }, { 5: 5 }, 
-            { 6: 0 }, { 7: 7 }, { 8: 8 }
+            { 3: 3 }, { 4: 4 }, { 5: 5 }, 
+            { 6: 6 }, { 7: 7 }, { 8: 8 }
         ]
 
     def _inBounds(self, position: int):
@@ -34,11 +34,11 @@ class Board:
         Print current state of board to the terminal
         '''
         print()
-        print(' {} | {} | {}'.format(self.board[0][0], self.board[1][1], self.board[2][2]))
-        print('------------')
-        print(' {} | {} | {}'.format(self.board[3][3], self.board[4][4], self.board[5][5]))
-        print('------------')
-        print(' {} | {} | {}'.format(self.board[6][6], self.board[7][7], self.board[8][8]))
+        print(" {} | {} | {}".format(self.board[0][0], self.board[1][1], self.board[2][2]))
+        print("------------")
+        print(" {} | {} | {}".format(self.board[3][3], self.board[4][4], self.board[5][5]))
+        print("------------")
+        print(" {} | {} | {}".format(self.board[6][6], self.board[7][7], self.board[8][8]))
         print()
 
     def checkForWinner(self):
@@ -68,6 +68,16 @@ class Board:
             return self.board[position][position]
         else: return None
 
+    def positionAvailable(self, position: int):
+        '''
+        Checks whether a position is available
+        Because the Player class requires 
+        '''
+        for i in range(8):
+            if not (lambda x : x == self.board[x][x])(i): return False
+        return True
+
+
     def placeToken(self, position: int, token: str):
         '''
         Places a token on the board if position is in correct range
@@ -83,7 +93,8 @@ Player Class for TicTacToe Game
 '''
 class Player:
 
-    def __init__(self, token):
+    def __init__(self, token: str):
+        self.checkTokenType(token)
         self.token = token
 
     def placeToken(self, board: Board, position: int):
@@ -91,6 +102,13 @@ class Player:
         Places a token on the board using player token
         '''
         return board.placeToken(position, self.token)
+
+    def checkTokenType(self, token: str):
+        '''
+        Raises error if token is not a string
+        Important to require string to avoid bugs when placing token on board
+        '''
+        if type(token) != str: raise ValueError("Player token must be of type string")
 
 
 class TicTacToe:
@@ -108,8 +126,12 @@ def main():
     For debugging
     '''
     board = Board()
+    player = Player('x')
     board.displayBoard()
-    print(board.checkForWinner())
+    board.positionAvailable(0)
+    player.placeToken(board, 0)
+    board.displayBoard()
+    board.positionAvailable(0)
 
 
 if __name__ == '__main__':
