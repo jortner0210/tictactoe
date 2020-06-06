@@ -71,7 +71,8 @@ class Board:
     def positionAvailable(self, position: int):
         '''
         Checks whether a position is available
-        Because the Player class requires 
+        lambda checks that a position is equal to the value on board
+        if not true then the position is not available
         '''
         for i in range(8):
             if not (lambda x : x == self.board[x][x])(i): return False
