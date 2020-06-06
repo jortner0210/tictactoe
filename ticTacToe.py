@@ -11,6 +11,9 @@ class Board:
         ]
 
     def _inBounds(self, position: int):
+        '''
+        Checks that given position is in bounds of game
+        '''
         if position >= 0 and position <= 8:
             return True
         else:
@@ -100,10 +103,10 @@ class TicTacToe:
 
 
 
-
-
-
 def main():
+    '''
+    For debugging
+    '''
     board = Board()
     board.displayBoard()
     print(board.checkForWinner())
