@@ -1,10 +1,13 @@
+import random
+
+
 '''
 Board Class for TicTacToe Game
 '''
 class Board:
 
     def __init__(self):
-        self.board = [
+        self._board = [
             { 0: 0 }, { 1: 1 }, { 2: 2 },
             { 3: 3 }, { 4: 4 }, { 5: 5 }, 
             { 6: 6 }, { 7: 7 }, { 8: 8 }
@@ -19,26 +22,32 @@ class Board:
         else:
             return False
 
-    def resetBoard(self):
+    def boardState(self):
+        '''
+        Returns copy of the current board state
+        '''
+        return self._board.copy()
+
+    def reset(self):
         '''
         Reset board to original state
         '''
-        self.board = [
+        self._board = [
             { 0: 0 }, { 1: 1 }, { 2: 2 },
             { 3: 3 }, { 4: 4 }, { 5: 5 }, 
             { 6: 6 }, { 7: 7 }, { 8: 8 }
         ]
 
-    def displayBoard(self):
+    def display(self):
         '''
         Print current state of board to the terminal
         '''
         print()
-        print(" {} | {} | {}".format(self.board[0][0], self.board[1][1], self.board[2][2]))
+        print(" {} | {} | {}".format(self._board[0][0], self._board[1][1], self._board[2][2]))
         print("------------")
-        print(" {} | {} | {}".format(self.board[3][3], self.board[4][4], self.board[5][5]))
+        print(" {} | {} | {}".format(self._board[3][3], self._board[4][4], self._board[5][5]))
         print("------------")
-        print(" {} | {} | {}".format(self.board[6][6], self.board[7][7], self.board[8][8]))
+        print(" {} | {} | {}".format(self._board[6][6], self._board[7][7], self._board[8][8]))
         print()
 
     def checkForWinner(self):
@@ -46,18 +55,26 @@ class Board:
         Checks the tokens in each column row and diagonal
         '''
         # Check columns
-        if self.board[0][0] == self.board[3][3] and self.board[3][3] == self.board[6][6]: return self.board[0][0]
-        if self.board[1][1] == self.board[4][4] and self.board[4][4] == self.board[7][7]: return self.board[1][1]
-        if self.board[2][2] == self.board[5][5] and self.board[5][5] == self.board[8][8]: return self.board[2][2]
+        if self._board[0][0] == self._board[3][3] and self._board[3][3] == self._board[6][6]: return self._board[0][0]
+        if self._board[1][1] == self._board[4][4] and self._board[4][4] == self._board[7][7]: return self._board[1][1]
+        if self._board[2][2] == self._board[5][5] and self._board[5][5] == self._board[8][8]: return self._board[2][2]
         # Check rows
-        if self.board[0][0] == self.board[1][1] and self.board[1][1] == self.board[2][2]: return self.board[0][0]
-        if self.board[3][3] == self.board[4][4] and self.board[4][4] == self.board[5][5]: return self.board[3][3]
-        if self.board[6][6] == self.board[7][7] and self.board[7][7] == self.board[8][8]: return self.board[6][6]
+        if self._board[0][0] == self._board[1][1] and self._board[1][1] == self._board[2][2]: return self._board[0][0]
+        if self._board[3][3] == self._board[4][4] and self._board[4][4] == self._board[5][5]: return self._board[3][3]
+        if self._board[6][6] == self._board[7][7] and self._board[7][7] == self._board[8][8]: return self._board[6][6]
         # Check diagonals
-        if self.board[0][0] == self.board[4][4] and self.board[4][4] == self.board[8][8]: return self.board[0][0]
-        if self.board[2][2] == self.board[4][4] and self.board[4][4] == self.board[6][6]: return self.board[2][2]
+        if self._board[0][0] == self._board[4][4] and self._board[4][4] == self._board[8][8]: return self._board[0][0]
+        if self._board[2][2] == self._board[4][4] and self._board[4][4] == self._board[6][6]: return self._board[2][2]
 
         return None
+
+    def isFull(self):
+        '''
+        Check if the board is full
+        '''
+        for i in range(8):
+            if self.positionAvailable(i): return False
+        return True
 
     def atPosition(self, position: int):
         '''
@@ -65,27 +82,34 @@ class Board:
         Must be between 0 and 8
         '''
         if self._inBounds(position):
-            return self.board[position][position]
+            return self._board[position][position]
         else: return None
 
     def positionAvailable(self, position: int):
         '''
         Checks whether a position is available
-        lambda checks that a position is equal to the value on board
-        if not true then the position is not available
+        if a positions board value is equal to the position index
+        then the position is available
         '''
-        for i in range(8):
-            if not (lambda x : x == self.board[x][x])(i): return False
+        if not (lambda x : x == self._board[x][x])(position): return False
         return True
-
 
     def placeToken(self, position: int, token: str):
         '''
         Places a token on the board if position is in correct range
+        and the position is available
         '''
-        if self._inBounds(position):
-            self.board[position][position] = token
+        if self._inBounds(position) and self.positionAvailable(position):
+            self._board[position][position] = token
             return True
+        else: return False
+
+    def isValidMove(self, position: int):
+        '''
+        Ensures the position is available and the position is within
+        the bounds of the game board
+        '''
+        if self._inBounds(position) and self.positionAvailable(position): return True
         else: return False
 
 
@@ -95,44 +119,116 @@ Player Class for TicTacToe Game
 class Player:
 
     def __init__(self, token: str):
-        self.checkTokenType(token)
-        self.token = token
+        self._checkTokenType(token)
+        self._token = token
 
-    def placeToken(self, board: Board, position: int):
-        '''
-        Places a token on the board using player token
-        '''
-        return board.placeToken(position, self.token)
-
-    def checkTokenType(self, token: str):
+    def _checkTokenType(self, token: str):
         '''
         Raises error if token is not a string
         Important to require string to avoid bugs when placing token on board
         '''
         if type(token) != str: raise ValueError("Player token must be of type string")
 
+    def placeToken(self, board: Board, position: int):
+        '''
+        Places a token on the board using player token
+        '''
+        return board.placeToken(position, self._token)
+
+    def getToken(self):
+        '''
+        Return player token
+        '''
+        return self._token
+
+    def getMove(self, board: Board):
+        '''
+        Return player move when a valid input is given
+        '''
+        while True:
+            player_input = input("Player {}. Enter move: ".format(self._token))
+            if player_input.isnumeric():
+                player_input = int(player_input)
+                if board.isValidMove(player_input):
+                    return player_input
+
 
 class TicTacToe:
 
-    def __init__(self):
-        self.board = Board()
+    def __init__(self, p_1: Player, p_2: Player, display: bool = False):
+        '''
+        _results : all actions and board states of each game
+        '''
+        self._board   = Board()
+        self._players = [p_1, p_2]
+        self._results = []
+        self._display = display
 
+    def _getNextPlayer(self, current_player: int):
+        '''
+        Returns the next player
+        '''
+        if current_player == 1: return 0
+        else: return 1
 
-
-
-
+    def shufflePlayers(self):
+        '''
+        Shuffle the order of the players
+        '''
+        random.shuffle(self._players)
+    
+    def playGame(self):
+        '''
+        Play through game
+        Current play is denoted by 0 or 1 - position is _players array
+        Players are shuffled before the start of each game
+        '''
+        self._board.reset()
+        self.shufflePlayers()
+        game_over   = False
+        curr_player = 0
+        if self._display: self._board.display()
+        game_data = {
+            'board_states': [],
+            'winner'      : ''
+        }
+        # game loop
+        while not game_over:
+            # add current board state
+            game_data['board_states'].append(self._board.boardState())
+            player_input = self._players[curr_player].getMove(self._board)
+            self._players[curr_player].placeToken(self._board, player_input)
+            # check for winner
+            winner = self._board.checkForWinner()
+            if winner is not None:
+                # game over : winner
+                game_data['winner'] = winner
+                print("Game Over: Winner player token {}".format(winner))
+                break
+            # check for draw
+            if self._board.isFull():
+                # game over : draw
+                game_data['winner'] = 'draw'
+                print("Game Over : Draw")
+                break
+            # switch player
+            curr_player = self._getNextPlayer(curr_player)
+            if self._display: self._board.display()
+        # append final board state
+        game_data['board_states'].append(self._board.boardState())
+        # append game data to results memeber
+        self._results.append(game_data)
+        if self._display: self._board.display()
+    
 
 def main():
     '''
     For debugging
     '''
-    board = Board()
-    player = Player('x')
-    board.displayBoard()
-    board.positionAvailable(0)
-    player.placeToken(board, 0)
-    board.displayBoard()
-    board.positionAvailable(0)
+    player_1 = Player('X')
+    player_2 = Player('O')
+    ttt_game = TicTacToe(player_1, player_2, True)
+    ttt_game.playGame()
 
 
 if __name__ == '__main__':
