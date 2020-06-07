@@ -175,7 +175,7 @@ class TTTAgent(Player):
 
 
 '''
-Class to runn a game between two players
+Class to run a game between two players
 '''
 class TicTacToe:
 
