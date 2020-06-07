@@ -4,7 +4,7 @@ import random
 '''
 Board Class for TicTacToe Game
 '''
-class Board:
+class TTTBoard:
 
     def __init__(self):
         self._board = [
@@ -99,7 +99,7 @@ class Board:
         Places a token on the board if position is in correct range
         and the position is available
         '''
-        if self._inBounds(position) and self.positionAvailable(position):
+        if self.isValidMove(position):
             self._board[position][position] = token
             return True
         else: return False
@@ -117,7 +117,7 @@ class Board:
 Player Class for TicTacToe Game
 For use by human player
 '''
-class Player:
+class TTTPlayer:
 
     def __init__(self, token: str):
         self._checkTokenType(token)
@@ -130,7 +130,7 @@ class Player:
         '''
         if type(token) != str: raise ValueError("Player token must be of type string")
 
-    def placeToken(self, board: Board, position: int):
+    def placeToken(self, board: TTTBoard, position: int):
         '''
         Places a token on the board using player token
         '''
@@ -142,7 +142,7 @@ class Player:
         '''
         return self._token
 
-    def getMove(self, board: Board):
+    def getMove(self, board: TTTBoard):
         '''
         Return player move when a valid input is given
         '''
@@ -158,12 +158,12 @@ class Player:
 Agent Class for TicTacToe Game
 For use by automated player
 '''
-class TTTAgent(Player):
+class TTTAgent(TTTPlayer):
 
-    def getMove(self, board: Board):
+    def getMove(self, board: TTTBoard):
         return self.getRandomMove(board)
 
-    def getRandomMove(self, board: Board):
+    def getRandomMove(self, board: TTTBoard):
         '''
         Returns randomly chosen move
         '''
@@ -179,11 +179,11 @@ Class to run a game between two players
 '''
 class TicTacToe:
 
-    def __init__(self, p_1: Player, p_2: Player, display: bool = False):
+    def __init__(self, p_1: TTTPlayer, p_2: TTTPlayer, display: bool = False):
         '''
         _results : all actions and board states of each game
         '''
-        self._board   = Board()
+        self._board   = TTTBoard()
         self._players = [p_1, p_2]
         self._results = []
         self._display = display
