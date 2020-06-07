@@ -174,6 +174,9 @@ class TTTAgent(Player):
                 return move
 
 
+'''
+Class to runn a game between two players
+'''
 class TicTacToe:
 
     def __init__(self, p_1: Player, p_2: Player, display: bool = False):
