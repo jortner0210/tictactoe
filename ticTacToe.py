@@ -8,9 +8,9 @@ class TTTBoard:
 
     def __init__(self):
         self._board = [
-            { 0: 0 }, { 1: 1 }, { 2: 2 },
-            { 3: 3 }, { 4: 4 }, { 5: 5 }, 
-            { 6: 6 }, { 7: 7 }, { 8: 8 }
+            0, 1, 2,
+            3, 4, 5,
+            6, 7, 8
         ]
 
     def _inBounds(self, position: int):
@@ -33,9 +33,9 @@ class TTTBoard:
         Reset board to original state
         '''
         self._board = [
-            { 0: 0 }, { 1: 1 }, { 2: 2 },
-            { 3: 3 }, { 4: 4 }, { 5: 5 }, 
-            { 6: 6 }, { 7: 7 }, { 8: 8 }
+            0, 1, 2,
+            3, 4, 5,
+            6, 7, 8
         ]
 
     def display(self):
@@ -43,11 +43,11 @@ class TTTBoard:
         Print current state of board to the terminal
         '''
         print()
-        print(" {} | {} | {}".format(self._board[0][0], self._board[1][1], self._board[2][2]))
+        print(" {} | {} | {}".format(self._board[0], self._board[1], self._board[2]))
         print("------------")
-        print(" {} | {} | {}".format(self._board[3][3], self._board[4][4], self._board[5][5]))
+        print(" {} | {} | {}".format(self._board[3], self._board[4], self._board[5]))
         print("------------")
-        print(" {} | {} | {}".format(self._board[6][6], self._board[7][7], self._board[8][8]))
+        print(" {} | {} | {}".format(self._board[6], self._board[7], self._board[8]))
         print()
 
     def checkForWinner(self):
@@ -55,16 +55,16 @@ class TTTBoard:
         Checks the tokens in each column row and diagonal
         '''
         # Check columns
-        if self._board[0][0] == self._board[3][3] and self._board[3][3] == self._board[6][6]: return self._board[0][0]
-        if self._board[1][1] == self._board[4][4] and self._board[4][4] == self._board[7][7]: return self._board[1][1]
-        if self._board[2][2] == self._board[5][5] and self._board[5][5] == self._board[8][8]: return self._board[2][2]
+        if self._board[0] == self._board[3] and self._board[3] == self._board[6]: return self._board[0]
+        if self._board[1] == self._board[4] and self._board[4] == self._board[7]: return self._board[1]
+        if self._board[2] == self._board[5] and self._board[5] == self._board[8]: return self._board[2]
         # Check rows
-        if self._board[0][0] == self._board[1][1] and self._board[1][1] == self._board[2][2]: return self._board[0][0]
-        if self._board[3][3] == self._board[4][4] and self._board[4][4] == self._board[5][5]: return self._board[3][3]
-        if self._board[6][6] == self._board[7][7] and self._board[7][7] == self._board[8][8]: return self._board[6][6]
+        if self._board[0] == self._board[1] and self._board[1] == self._board[2]: return self._board[0]
+        if self._board[3] == self._board[4] and self._board[4] == self._board[5]: return self._board[3]
+        if self._board[6] == self._board[7] and self._board[7] == self._board[8]: return self._board[6]
         # Check diagonals
-        if self._board[0][0] == self._board[4][4] and self._board[4][4] == self._board[8][8]: return self._board[0][0]
-        if self._board[2][2] == self._board[4][4] and self._board[4][4] == self._board[6][6]: return self._board[2][2]
+        if self._board[0] == self._board[4] and self._board[4] == self._board[8]: return self._board[0]
+        if self._board[2] == self._board[4] and self._board[4] == self._board[6]: return self._board[2]
 
         return None
 
@@ -91,7 +91,7 @@ class TTTBoard:
         if a positions board value is equal to the position index
         then the position is available
         '''
-        if not (lambda x : x == self._board[x][x])(position): return False
+        if not (lambda x : x == self._board[x])(position): return False
         return True
 
     def placeToken(self, position: int, token: str):
@@ -100,7 +100,7 @@ class TTTBoard:
         and the position is available
         '''
         if self.isValidMove(position):
-            self._board[position][position] = token
+            self._board[position] = token
             return True
         else: return False
 
@@ -251,7 +251,7 @@ def main():
     '''
     player_1 = TTTAgent('X')
     player_2 = TTTAgent('O')
-    ttt_game = TicTacToe(player_1, player_2)
+    ttt_game = TicTacToe(player_1, player_2, True)
     ttt_game.playGame()
 
 
