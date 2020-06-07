@@ -115,6 +115,7 @@ class Board:
 
 '''
 Player Class for TicTacToe Game
+For use by human player
 '''
 class Player:
 
@@ -151,6 +152,26 @@ class Player:
                 player_input = int(player_input)
                 if board.isValidMove(player_input):
                     return player_input
+
+
+'''
+Agent Class for TicTacToe Game
+For use by automated player
+'''
+class TTTAgent(Player):
+
+    def getMove(self, board: Board):
+        return self.getRandomMove(board)
+
+    def getRandomMove(self, board: Board):
+        '''
+        Returns randomly chosen move
+        '''
+        while True:
+            move = random.randint(0, 8)
+            if board.isValidMove(move): 
+                print("Player {}. Move : {}".format(self._token, move))
+                return move
 
 
 class TicTacToe:
@@ -203,13 +224,13 @@ class TicTacToe:
             if winner is not None:
                 # game over : winner
                 game_data['winner'] = winner
-                print("Game Over: Winner player token {}".format(winner))
+                if self._display: print("Game Over: Winner player token {}".format(winner))
                 break
             # check for draw
             if self._board.isFull():
                 # game over : draw
                 game_data['winner'] = 'draw'
-                print("Game Over : Draw")
+                if self._display: print("Game Over : Draw")
                 break
             # switch player
             curr_player = self._getNextPlayer(curr_player)
@@ -225,9 +246,9 @@ def main():
     '''
     For debugging
     '''
-    player_1 = Player('X')
-    player_2 = Player('O')
-    ttt_game = TicTacToe(player_1, player_2, True)
+    player_1 = TTTAgent('X')
+    player_2 = TTTAgent('O')
+    ttt_game = TicTacToe(player_1, player_2)
     ttt_game.playGame()
 
 
