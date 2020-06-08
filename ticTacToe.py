@@ -17,6 +17,18 @@ class TTTBoard:
         #    6, 7, 8
         #]
 
+    @staticmethod
+    def validMovesForHash(board_hash: str):
+        '''
+        Returns a list of open positions on board given a hash
+        string of the board
+        '''
+        open_positions = []
+        for idx in range(len(board_hash)):
+            if board_hash[idx] == '0':
+                open_positions.append(idx)
+        return open_positions
+
     def _inBounds(self, position: int):
         '''
         Checks that given position is in bounds of game
@@ -40,6 +52,16 @@ class TTTBoard:
             if self._player_tokens[key] == token:
                 return key
         return None
+
+    def getCurrentOpenPositions(self):
+        '''
+        Returns a list of open positions on current board
+        '''
+        open_positions = []
+        for idx in range(self._board.shape[0]):
+            if not self._board[idx]:
+                open_positions.append(idx)
+        return open_positions
 
     def addPlayer(self, player_token: str):
         '''
@@ -68,7 +90,7 @@ class TTTBoard:
         for row in range(self._rows):
             for col in range(self._cols):
                 curr_val = self._board[(row * self._cols) + col]
-                if not curr_val: print("   ", end="")
+                if not curr_val: print(" {} ".format((row * self._cols) + col), end="")
                 else: print(" {} ".format(self._getPlayerToken(curr_val)), end="")
                 if col < (self._cols - 1): print("|", end="")
             if row < (self._rows - 1): print("\n", "-" * (3 * self._cols), "-" * (self._cols - 1), sep="")
@@ -112,11 +134,11 @@ class TTTBoard:
     def positionAvailable(self, position: int):
         '''
         Checks whether a position is available
-        if a positions board value is equal to the position index
-        then the position is available
+        if a positions board value is equal to zero
         '''
-        if not (lambda x : not self._board[x])(position): return False
-        return True
+        if not self._board[position]:
+            return True
+        return False
 
     def placeToken(self, position: int, token: str):
         '''
@@ -137,14 +159,15 @@ class TTTBoard:
         if self._inBounds(position) and self.positionAvailable(position): return True
         else: return False
 
-    def getHash(self, p_1_token: str, p_2_token: str):
+    def getHash(self):
         '''
         Returns the hash value for current board state
-        '''
-        # Reconfigure board :
-        # - empty = 1
-        # - p_1   = 2
-        # - p_2   = 3
+        Hash value is the string of values at each position :
+        i.e. empty board (3x3) = "000000000" 
+        - empty = 0
+        - p_1   = 1
+        - p_2   = 2
+        '''        
         board    = [str(val) for val in self._board]
         hash_str = "".join(board)
         return hash_str
@@ -179,6 +202,9 @@ class TTTPlayer:
         '''
         return self._token
 
+    def passReward(self, reward: float, state_actions: list):
+        pass
+
     def getMove(self, board: TTTBoard):
         '''
         Return player move when a valid input is given
@@ -192,6 +218,24 @@ class TTTPlayer:
 
 
 '''
+Always chooses random move
+'''
+class TTTRandomAgent(TTTPlayer):
+
+    def getMove(self, board: TTTBoard):
+        return self.getRandomMove(board)
+
+    def getRandomMove(self, board: TTTBoard):
+        '''
+        Returns randomly chosen move
+        '''
+        valid_moves = board.getCurrentOpenPositions()
+        rand_idx    = random.randint(0, len(valid_moves) - 1)
+        #print("Valid Moves: {}".format(valid_moves))
+        return valid_moves[rand_idx]
+
+
+'''
 Class to run a game between two players
 '''
 class TicTacToe:
@@ -201,7 +245,17 @@ class TicTacToe:
         _results : all actions and board states of each game
         '''
         self._board   = TTTBoard()
-        self._players = [p_1, p_2]
+        self._players = [{
+            "player"       : p_1,
+            "player_num"   : 1,
+            "state_actions": []
+        },
+        {
+            "player"       : p_2,
+            "player_num"   : 2,
+            "state_actions": []
+        }
+        ]
         self._results = []
         self._display = display
         self._addPlayers()
@@ -211,7 +265,7 @@ class TicTacToe:
         Adds each player to game
         '''
         for player in self._players:
-            self._board.addPlayer(player.getToken())
+            self._board.addPlayer(player["player"].getToken())
 
     def _getNextPlayer(self, current_player: int):
         '''
@@ -219,6 +273,13 @@ class TicTacToe:
         '''
         if current_player == 1: return 0
         else: return 1
+
+    def _clearStateActions(self):
+        '''
+        Clear state action list for each player
+        '''
+        for player in self._players:
+            player["state_actions"].clear()
 
     def shufflePlayers(self):
         '''
@@ -239,6 +300,15 @@ class TicTacToe:
         '''
         Displays the percent win of each player
         '''
+        # reorder players list to ensure p_1 is first in list
+        players = []
+        if self._players[0]["player_num"] == 1:
+            players.append(self._players[0])
+            players.append(self._players[1])
+        else:
+            players.append(self._players[1])
+            players.append(self._players[0])
+
         total_games   = len(self._results)
         player_1_wins = 0
         player_2_wins = 0
@@ -247,13 +317,13 @@ class TicTacToe:
             result = game["winner"]
             if result == "draw":
                 draws += 1
-            elif result == self._players[0].getToken():
+            elif result == players[0]["player"].getToken():
                 player_1_wins += 1
             else:
                 player_2_wins += 1
-        print("Player 1 : {}%".format(100*(player_1_wins/total_games)))
-        print("Player 2 : {}%".format(100*(player_2_wins/total_games)))
-        print("Draws    : {}%".format(100*(draws/total_games)))
+        print("Player 1 : {}%".format(int(100*(player_1_wins/total_games))))
+        print("Player 2 : {}%".format(int(100*(player_2_wins/total_games))))
+        print("Draws    : {}%".format(int(100*(draws/total_games))))
         print()
 
 
@@ -267,7 +337,7 @@ class TicTacToe:
         '''
         Returns the current hash value of the board
         '''
-        return self._board.getHash(self._players[0].getToken(), self._players[1].getToken())
+        return self._board.getHash()
 
     def playGame(self):
         '''
@@ -284,26 +354,42 @@ class TicTacToe:
             print("Board Hash : {}".format(self.getCurrBoardHash()))
         game_data = {
             "board_states": [],
+            "board_hashes": [],
             "winner"      : "",
             "game_num"    : 0
         }
         # game loop
         while not game_over:
-            # add current board state
-            game_data["board_states"].append(self._board.boardState())
-            player_input = self._players[curr_player].getMove(self._board)
-            self._players[curr_player].placeToken(self._board, player_input)
+            
+            # get active player move
+            player_input = self._players[curr_player]["player"].getMove(self._board)
+            self._players[curr_player]["state_actions"].append((self._board.getHash(), player_input))
+            # place token on board
+            self._players[curr_player]["player"].placeToken(self._board, player_input)
             # check for winner
             winner = self._board.checkForWinner()
             if winner is not None:
                 # game over : winner
+                # add final state to state actions
+                self._players[0]["state_actions"].append((self._board.getHash(), -1))
+                self._players[1]["state_actions"].append((self._board.getHash(), -1))
                 game_data["winner"] = winner
+                for player in self._players:
+                    if player["player"].getToken() == winner:
+                        player["player"].passReward(1, player["state_actions"])
+                    else:
+                        player["player"].passReward(-1, player["state_actions"])
                 if self._display: print("\nGame Over: Winner player token {}".format(winner))
                 break
             # check for draw
             if self._board.isFull():
                 # game over : draw
+                # add final state to state actions
+                self._players[0]["state_actions"].append((self._board.getHash(), -1))
+                self._players[1]["state_actions"].append((self._board.getHash(), -1))
                 game_data["winner"] = "draw"
+                for player in self._players:
+                    player["player"].passReward(0, player["state_actions"])
                 if self._display: print("\nGame Over : Draw")
                 break
             # switch player
@@ -311,11 +397,13 @@ class TicTacToe:
             if self._display: 
                 self._board.display()
                 print("Board Hash : {}".format(self.getCurrBoardHash()))
-        # append final board state
+        # append final board state and hash to game data
         game_data["board_states"].append(self._board.boardState())
+        #game_data["board_hash"].append(self._board.getHash())
         game_data["game_num"] = len(self._results) + 1
         # append game data to results memeber
         self._results.append(game_data)
+        self._clearStateActions()
         if self._display: 
             self._board.display()
             print("Board Hash : {}".format(self.getCurrBoardHash()))
@@ -323,7 +411,7 @@ class TicTacToe:
 
 def main():
     board = TTTBoard()
-    board.getHash("X", "O")
+    board.getHash()
 
 
 if __name__ == "__main__":
