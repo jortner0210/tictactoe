@@ -1,5 +1,6 @@
 import random
 import numpy as np
+import copy
 
 '''
 Board Class for TicTacToe Game
@@ -7,21 +8,21 @@ Board Class for TicTacToe Game
 class TTTBoard:
 
     def __init__(self):
+        '''
+        _player_tokens : { 
+            1: "X", 
+            2: "O", ...
+        }
+        '''
         self._rows  = 3
         self._cols  = 3 
         self._board = np.zeros(self._rows * self._cols, dtype=int)
         self._player_tokens = { }
-        #self._board = [
-        #    0, 1, 2,
-        #    3, 4, 5,
-        #    6, 7, 8
-        #]
 
     @staticmethod
     def validMovesForHash(board_hash: str):
         '''
-        Returns a list of open positions on board given a hash
-        string of the board
+        Returns a list of open positions on board given a board state hash
         '''
         open_positions = []
         for idx in range(len(board_hash)):
@@ -31,12 +32,10 @@ class TTTBoard:
 
     def _inBounds(self, position: int):
         '''
-        Checks that given position is in bounds of game
+        Checks if a position is within bounds of board
         '''
-        if position >= 0 and position <= 8:
-            return True
-        else:
-            return False
+        if position >= 0 and position < (self._rows * self._cols): return True
+        else: return False
 
     def _getPlayerToken(self, player_value: int):
         '''
@@ -49,8 +48,7 @@ class TTTBoard:
         Returns the numeric value of given token
         '''
         for key in self._player_tokens.keys():
-            if self._player_tokens[key] == token:
-                return key
+            if self._player_tokens[key] == token: return key
         return None
 
     def getCurrentOpenPositions(self):
@@ -65,16 +63,16 @@ class TTTBoard:
 
     def addPlayer(self, player_token: str):
         '''
-        Create hash using player token to access numeric version
+        Add player to _player_tokens dictionary
         '''
         key_count = len(self._player_tokens.keys())
         self._player_tokens[key_count + 1] = player_token
 
-    def boardState(self):
+    def copyBoard(self):
         '''
         Returns copy of the current board state
         '''
-        return self._board.copy()
+        return copy.deepcopy(self)
 
     def reset(self):
         '''
@@ -118,7 +116,7 @@ class TTTBoard:
         '''
         Check if the board is full
         '''
-        for i in range(8):
+        for i in range(9):
             if self.positionAvailable(i): return False
         return True
 
@@ -136,8 +134,7 @@ class TTTBoard:
         Checks whether a position is available
         if a positions board value is equal to zero
         '''
-        if not self._board[position]:
-            return True
+        if self._inBounds(position) and not self._board[position]: return True
         return False
 
     def placeToken(self, position: int, token: str):
@@ -218,9 +215,12 @@ class TTTPlayer:
 
 
 '''
-Always chooses random move
+TTT Agent that always chooses a random move
 '''
 class TTTRandomAgent(TTTPlayer):
+
+    def passReward(self, reward: float, state_actions: list):
+        pass
 
     def getMove(self, board: TTTBoard):
         return self.getRandomMove(board)
@@ -231,7 +231,6 @@ class TTTRandomAgent(TTTPlayer):
         '''
         valid_moves = board.getCurrentOpenPositions()
         rand_idx    = random.randint(0, len(valid_moves) - 1)
-        #print("Valid Moves: {}".format(valid_moves))
         return valid_moves[rand_idx]
 
 
@@ -281,7 +280,35 @@ class TicTacToe:
         for player in self._players:
             player["state_actions"].clear()
 
-    def shufflePlayers(self):
+    def _runGames(self, train: bool, num_games: int, verbose: bool = False, p_1: bool = False, p_2: bool = False):
+        '''
+        Disable agent training and play through a number of games
+        '''
+        if p_1:
+            try:
+                player_1 = [p["player"] for p in self._players if p["player_num"] == 1][0]
+                player_1.trainAgent(train)
+            except:
+                print("Can't change player 1's training memeber")
+                return None
+        if p_2:
+            try:
+                player_2 = [p["player"] for p in self._players if p["player_num"] == 2][0]
+                player_2.trainAgent(train)
+            except:
+                print("Can't change player 2's training memeber")
+                return None
+
+        results = []
+        self._display = verbose
+        for game in range(num_games):
+            game_results = self.playGame()
+            game_results["game_num"] = len(results) + 1
+            results.append(game_results)
+        self._display = False
+        return results
+
+    def _shufflePlayers(self):
         '''
         Shuffle the order of the players
         '''
@@ -296,7 +323,7 @@ class TicTacToe:
             print("g_{}:\t{}".format(game["game_num"], game["winner"]))
         print()
     
-    def displayResults(self):
+    def displayResults(self, results_struct: list):
         '''
         Displays the percent win of each player
         '''
@@ -309,11 +336,11 @@ class TicTacToe:
             players.append(self._players[1])
             players.append(self._players[0])
 
-        total_games   = len(self._results)
+        total_games   = len(results_struct)
         player_1_wins = 0
         player_2_wins = 0
         draws         = 0
-        for game in self._results:
+        for game in results_struct:
             result = game["winner"]
             if result == "draw":
                 draws += 1
@@ -321,23 +348,29 @@ class TicTacToe:
                 player_1_wins += 1
             else:
                 player_2_wins += 1
+        print("Games    : {}".format(total_games))
         print("Player 1 : {}%".format(int(100*(player_1_wins/total_games))))
         print("Player 2 : {}%".format(int(100*(player_2_wins/total_games))))
         print("Draws    : {}%".format(int(100*(draws/total_games))))
         print()
-
-
-    def rerunGame(self, game_num):
-        '''
-        Displays each board state from game number
-        '''
-        pass
     
     def getCurrBoardHash(self):
         '''
         Returns the current hash value of the board
         '''
         return self._board.getHash()
+
+    def test(self, num_games: int, verbose: bool = False, p_1: bool = False, p_2: bool = False):
+        '''
+        Disable agent training and play through a number of games
+        '''        
+        self._runGames(False, num_games, verbose=verbose, p_1=p_1, p_2=p_2)
+
+    def train(self, num_games: int, verbose: bool = False, p_1: bool = False, p_2: bool = False):
+        '''
+        Enable training for players and run
+        '''
+        self._runGames(True, num_games, verbose=verbose, p_1=p_1, p_2=p_2)
 
     def playGame(self):
         '''
@@ -346,12 +379,11 @@ class TicTacToe:
         Players are shuffled before the start of each game
         '''
         self._board.reset()
-        self.shufflePlayers()
+        self._shufflePlayers()
         game_over   = False
         curr_player = 0
-        if self._display: 
-            self._board.display()
-            print("Board Hash : {}".format(self.getCurrBoardHash()))
+        if self._display: self._board.display()
+
         game_data = {
             "board_states": [],
             "board_hashes": [],
@@ -360,19 +392,19 @@ class TicTacToe:
         }
         # game loop
         while not game_over:
-            
             # get active player move
             player_input = self._players[curr_player]["player"].getMove(self._board)
-            self._players[curr_player]["state_actions"].append((self._board.getHash(), player_input))
+            # pass game states to data and player
+            curr_hash = self._board.getHash()
+            self._players[curr_player]["state_actions"].append((curr_hash, player_input))
+            game_data["board_states"].append(copy.deepcopy(self._board))
+            game_data["board_hashes"].append(curr_hash)
             # place token on board
             self._players[curr_player]["player"].placeToken(self._board, player_input)
             # check for winner
             winner = self._board.checkForWinner()
             if winner is not None:
                 # game over : winner
-                # add final state to state actions
-                self._players[0]["state_actions"].append((self._board.getHash(), -1))
-                self._players[1]["state_actions"].append((self._board.getHash(), -1))
                 game_data["winner"] = winner
                 for player in self._players:
                     if player["player"].getToken() == winner:
@@ -384,9 +416,6 @@ class TicTacToe:
             # check for draw
             if self._board.isFull():
                 # game over : draw
-                # add final state to state actions
-                self._players[0]["state_actions"].append((self._board.getHash(), -1))
-                self._players[1]["state_actions"].append((self._board.getHash(), -1))
                 game_data["winner"] = "draw"
                 for player in self._players:
                     player["player"].passReward(0, player["state_actions"])
@@ -394,24 +423,25 @@ class TicTacToe:
                 break
             # switch player
             curr_player = self._getNextPlayer(curr_player)
-            if self._display: 
-                self._board.display()
-                print("Board Hash : {}".format(self.getCurrBoardHash()))
+            if self._display: self._board.display()
         # append final board state and hash to game data
-        game_data["board_states"].append(self._board.boardState())
-        #game_data["board_hash"].append(self._board.getHash())
-        game_data["game_num"] = len(self._results) + 1
-        # append game data to results memeber
-        self._results.append(game_data)
+        # add final state to state actions
+        curr_hash = self._board.getHash()
+        game_data["board_states"].append(self._board.copyBoard())
+        game_data["board_hashes"].append(curr_hash)
+        self._players[0]["state_actions"].append((curr_hash, -1))
+        self._players[1]["state_actions"].append((curr_hash, -1))
+
         self._clearStateActions()
-        if self._display: 
-            self._board.display()
-            print("Board Hash : {}".format(self.getCurrBoardHash()))
+        if self._display: self._board.display()
+        return game_data
     
 
 def main():
-    board = TTTBoard()
-    board.getHash()
+    
+    p1    = TTTRandomAgent('X')
+    p2    = TTTRandomAgent('O')
+    game = TicTacToe(p1, p2)
 
 
 if __name__ == "__main__":
