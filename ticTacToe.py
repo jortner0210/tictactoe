@@ -215,26 +215,6 @@ class TTTPlayer:
 
 
 '''
-TTT Agent that always chooses a random move
-'''
-class TTTRandomAgent(TTTPlayer):
-
-    def passReward(self, reward: float, state_actions: list):
-        pass
-
-    def getMove(self, board: TTTBoard):
-        return self.getRandomMove(board)
-
-    def getRandomMove(self, board: TTTBoard):
-        '''
-        Returns randomly chosen move
-        '''
-        valid_moves = board.getCurrentOpenPositions()
-        rand_idx    = random.randint(0, len(valid_moves) - 1)
-        return valid_moves[rand_idx]
-
-
-'''
 Class to run a game between two players
 '''
 class TicTacToe:
@@ -437,12 +417,7 @@ class TicTacToe:
         return game_data
     
 
-def main():
-    
-    p1    = TTTRandomAgent('X')
-    p2    = TTTRandomAgent('O')
-    game = TicTacToe(p1, p2)
 
 
 if __name__ == "__main__":
-    main()
+    pass

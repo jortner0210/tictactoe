@@ -1,10 +1,31 @@
 from ticTacToe import TTTPlayer
 from ticTacToe import TTTBoard
 from ticTacToe import TicTacToe
-from ticTacToe import TTTRandomAgent
 import time
 import pprint
 import random
+import operator
+
+
+'''
+TTT Agent that always chooses a random move
+'''
+class TTTRandomAgent(TTTPlayer):
+
+    def passReward(self, reward: float, state_actions: list):
+        pass
+
+    def getMove(self, board: TTTBoard):
+        return self.getRandomMove(board)
+
+    def getRandomMove(self, board: TTTBoard):
+        '''
+        Returns randomly chosen move
+        '''
+        valid_moves = board.getCurrentOpenPositions()
+        rand_idx    = random.randint(0, len(valid_moves) - 1)
+        return valid_moves[rand_idx]
+
 
 '''
 Agent Class for TicTacToe Game
@@ -195,13 +216,15 @@ class TTTQAgent(TTTPlayer):
 
 class TTTMiniMaxAgent(TTTPlayer):
 
-    def getMove(self):
+    def passReward(self, reward: float, state_actions: list):
+        pass
+
+    def getMove(self, board: TTTBoard):
         pass
 
 
 
 
-import operator
 def main():
   
     player_1 = TTTQAgent('X')    
