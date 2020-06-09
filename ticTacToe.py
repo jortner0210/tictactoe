@@ -52,6 +52,12 @@ class TTTBoard:
             if self._player_tokens[key] == token: return key
         return None
 
+    def getPlayerTokens(self):
+        '''
+        Returns list of all player tokens
+        '''
+        return [self._player_tokens[key] for key in self._player_tokens.keys()]
+
     def getCurrentOpenPositions(self):
         '''
         Returns a list of open positions on current board

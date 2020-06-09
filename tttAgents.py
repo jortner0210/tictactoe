@@ -216,9 +216,78 @@ class TTTQAgent(TTTPlayer):
 
 class TTTMiniMaxAgent(TTTPlayer):
 
+    def __init__(self, token: str):
+        TTTPlayer.__init__(self, token)
+        self._rewards = {
+            token : 1,
+            "draw": 0
+        }
 
-    def _miniMax(self, board: TTTBoard):
-        return 1
+    def _getMinToken(self, board: TTTBoard):
+        '''
+        Returns the token of opponent from board
+        '''
+        tokens = board.getPlayerTokens()
+        for token in tokens:
+            if token != self.getToken():
+                return token
+
+    def _isTerminalState(self, board: TTTBoard):
+        '''
+        If terminal state, return result
+        otherwise return None
+        '''
+        # Check for winner
+        winner = board.checkForWinner()
+        if winner is not None:
+            return winner
+        # Check for draw
+        if board.isFull():
+            return "draw"
+        return None
+
+    def _miniMax(self, board: TTTBoard, depth: int, maximizing: bool):
+        '''
+        pseudo code : https://en.wikipedia.org/wiki/Minimax
+        function minimax(node, depth, maximizingPlayer) is
+            if depth = 0 or node is a terminal node then
+                return the heuristic value of node
+            if maximizingPlayer then
+                value := −∞
+                for each child of node do
+                    value := max(value, minimax(child, depth − 1, FALSE))
+                return value
+            else (* minimizing player *)
+                value := +∞
+                for each child of node do
+                    value := min(value, minimax(child, depth − 1, TRUE))
+                return value
+        '''
+        # Check for terminal state and return reward if true
+        #if not depth: return 0
+        check_term = self._isTerminalState(board)
+        if check_term is not None:
+            try:
+                return self._rewards[check_term]
+            except:
+                return -1
+        moves     = board.getCurrentOpenPositions()
+        min_token = self._getMinToken(board)
+        if maximizing:
+            value = -999
+            for move in moves:
+                next_board_state = board.copy()
+                next_board_state.placeToken(move, self.getToken())
+                value = max(value, self._miniMax(next_board_state, depth + 1, False))
+            return value
+        else:
+            value = 999
+            for move in moves:
+                next_board_state = board.copy()
+                next_board_state.placeToken(move, min_token)
+                value = min(value, self._miniMax(next_board_state, depth + 1, True))
+            return value
+
 
     def passReward(self, reward: float, state_actions: list):
         pass
@@ -229,7 +298,9 @@ class TTTMiniMaxAgent(TTTPlayer):
         moves      = board.getCurrentOpenPositions()
         # for each available move, copy board, make move, get value from minimax function
         for move in moves:
-            score = self._miniMax(board.copy().placeToken(move, self.getToken()))
+            next_board_state = board.copy()
+            next_board_state.placeToken(move, self.getToken())
+            score = self._miniMax(next_board_state, 0, False)
             if score > best_score:
                 best_score = score
                 best_move  = move
@@ -240,7 +311,7 @@ class TTTMiniMaxAgent(TTTPlayer):
 def main():
   
     player_1 = TTTMiniMaxAgent('X')    
-    player_2 = TTTMiniMaxAgent('O')
+    player_2 = TTTPlayer('O')
     ttt_game = TicTacToe(player_1, player_2)
 
     ttt_game.test(1, verbose=True)
