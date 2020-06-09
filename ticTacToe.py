@@ -1,6 +1,7 @@
 import random
 import numpy as np
 import copy
+import time
 
 '''
 Board Class for TicTacToe Game
@@ -68,7 +69,7 @@ class TTTBoard:
         key_count = len(self._player_tokens.keys())
         self._player_tokens[key_count + 1] = player_token
 
-    def copyBoard(self):
+    def copy(self):
         '''
         Returns copy of the current board state
         '''
@@ -93,6 +94,7 @@ class TTTBoard:
                 if col < (self._cols - 1): print("|", end="")
             if row < (self._rows - 1): print("\n", "-" * (3 * self._cols), "-" * (self._cols - 1), sep="")
         print("\n")
+        time.sleep(1)
 
     def checkForWinner(self):
         '''
@@ -285,6 +287,7 @@ class TicTacToe:
             game_results = self.playGame()
             game_results["game_num"] = len(results) + 1
             results.append(game_results)
+        self.displayResults(results)
         self._display = False
         return results
 
@@ -362,7 +365,9 @@ class TicTacToe:
         self._shufflePlayers()
         game_over   = False
         curr_player = 0
-        if self._display: self._board.display()
+        if self._display: 
+            print("\n| ---------- GAME START ---------- |")
+            self._board.display()
 
         game_data = {
             "board_states": [],
@@ -373,14 +378,18 @@ class TicTacToe:
         # game loop
         while not game_over:
             # get active player move
-            player_input = self._players[curr_player]["player"].getMove(self._board)
+            active_player = self._players[curr_player]["player"]
+            player_move   = active_player.getMove(self._board)
             # pass game states to data and player
             curr_hash = self._board.getHash()
-            self._players[curr_player]["state_actions"].append((curr_hash, player_input))
+            self._players[curr_player]["state_actions"].append((curr_hash, player_move))
             game_data["board_states"].append(copy.deepcopy(self._board))
             game_data["board_hashes"].append(curr_hash)
             # place token on board
-            self._players[curr_player]["player"].placeToken(self._board, player_input)
+            active_player.placeToken(self._board, player_move)
+            if self._display: 
+                print("Player {} placed token on position {}".format(active_player.getToken(), player_move))   
+                self._board.display()
             # check for winner
             winner = self._board.checkForWinner()
             if winner is not None:
@@ -391,7 +400,7 @@ class TicTacToe:
                         player["player"].passReward(1, player["state_actions"])
                     else:
                         player["player"].passReward(-1, player["state_actions"])
-                if self._display: print("\nGame Over: Winner player token {}".format(winner))
+                if self._display: print("Game Over: Winner player token {}".format(winner))
                 break
             # check for draw
             if self._board.isFull():
@@ -399,21 +408,19 @@ class TicTacToe:
                 game_data["winner"] = "draw"
                 for player in self._players:
                     player["player"].passReward(0, player["state_actions"])
-                if self._display: print("\nGame Over : Draw")
+                if self._display: print("Game Over : Draw")
                 break
             # switch player
             curr_player = self._getNextPlayer(curr_player)
-            if self._display: self._board.display()
         # append final board state and hash to game data
         # add final state to state actions
         curr_hash = self._board.getHash()
-        game_data["board_states"].append(self._board.copyBoard())
+        game_data["board_states"].append(self._board.copy())
         game_data["board_hashes"].append(curr_hash)
         self._players[0]["state_actions"].append((curr_hash, -1))
         self._players[1]["state_actions"].append((curr_hash, -1))
 
         self._clearStateActions()
-        if self._display: self._board.display()
         return game_data
     
 

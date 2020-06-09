@@ -216,28 +216,34 @@ class TTTQAgent(TTTPlayer):
 
 class TTTMiniMaxAgent(TTTPlayer):
 
+
+    def _miniMax(self, board: TTTBoard):
+        return 1
+
     def passReward(self, reward: float, state_actions: list):
         pass
 
     def getMove(self, board: TTTBoard):
-        pass
-
+        best_score = -999
+        best_move  = -1
+        moves      = board.getCurrentOpenPositions()
+        # for each available move, copy board, make move, get value from minimax function
+        for move in moves:
+            score = self._miniMax(board.copy().placeToken(move, self.getToken()))
+            if score > best_score:
+                best_score = score
+                best_move  = move
+        return best_move
 
 
 
 def main():
   
-    player_1 = TTTQAgent('X')    
-    player_2 = TTTQAgent('O')
+    player_1 = TTTMiniMaxAgent('X')    
+    player_2 = TTTMiniMaxAgent('O')
     ttt_game = TicTacToe(player_1, player_2)
 
-    ttt_game.test(100, verbose=False, p_1=True, p_2=True)
-
-    human_player = TTTPlayer('O')
-    new_game = TicTacToe(player_1, human_player, True)
-
-    for x in range(20):
-        new_game.playGame()
+    ttt_game.test(1, verbose=True)
     
 
 
