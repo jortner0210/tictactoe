@@ -1,3 +1,4 @@
+from abc import ABC, abstractmethod
 import random
 import numpy as np
 import copy
@@ -106,7 +107,6 @@ class TTTBoard:
                 if col < (self._cols - 1): print("|", end="")
             if row < (self._rows - 1): print("\n", "-" * (3 * self._cols), "-" * (self._cols - 1), sep="")
         print("\n")
-        time.sleep(1)
 
     def checkForWinner(self):
         '''
@@ -194,7 +194,7 @@ class TTTBoard:
 Player Class for TicTacToe Game
 For use by human player
 '''
-class TTTPlayer:
+class TTTPlayer(ABC):
 
     def __init__(self, token: str):
         self._checkTokenType(token)
@@ -219,9 +219,6 @@ class TTTPlayer:
         '''
         return self._token
 
-    def passReward(self, reward: float, state_actions: list):
-        pass
-
     def getRandomMove(self, board: TTTBoard):
         '''
         Returns randomly chosen move
@@ -230,16 +227,13 @@ class TTTPlayer:
         rand_idx    = random.randint(0, len(valid_moves) - 1)
         return valid_moves[rand_idx]
 
+    @abstractmethod
+    def passReward(self, reward: float, state_actions: list):
+        pass
+
+    @abstractmethod
     def getMove(self, board: TTTBoard):
-        '''
-        Return player move when a valid input is given
-        '''
-        while True:
-            player_input = input("Player {}. Enter move: ".format(self._token))
-            if player_input.isnumeric():
-                player_input = int(player_input)
-                if board.isValidMove(player_input):
-                    return player_input
+        pass
 
 
 '''
@@ -380,7 +374,6 @@ class TicTacToe:
         '''
         return self._runGames(True, num_games, verbose=verbose, show_results=show_results, p_1=p_1, p_2=p_2)
         
-
     def playGame(self):
         '''
         Play through game
@@ -448,9 +441,3 @@ class TicTacToe:
 
         self._clearStateActions()
         return game_data
-    
-
-
-
-if __name__ == "__main__":
-    pass

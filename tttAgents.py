@@ -8,6 +8,23 @@ import operator
 import math
 
 
+class TTTHumanAgent(TTTPlayer):
+
+    def passReward(self, reward: float, state_actions: list):
+        pass
+
+    def getMove(self, board: TTTBoard):
+        '''
+        Prompts player to enter move
+        '''
+        while True:
+            player_input = input("Player {}. Enter move: ".format(self._token))
+            if player_input.isnumeric():
+                player_input = int(player_input)
+                if board.isValidMove(player_input):
+                    return player_input
+
+
 '''
 TTT Agent that always chooses a random move
 '''
@@ -104,29 +121,6 @@ class TTTQAgent(TTTPlayer):
             self._addHash(state_hash, TTTBoard.validMovesForHash(state_hash))
             self._q_table[state_hash][action] = new_value
 
-    def _getQValue(self, state_hash: str, action: int):
-        '''
-        Returns the q-value of given state and action
-        '''
-        try:
-            return self._q_table[state_hash][action]
-        except:
-            self._addHash(state_hash, TTTBoard.validMovesForHash(state_hash))
-            return self._init_q_val
-
-
-    def _calcReward(self, state_hash: str, action: int, max_next_q: float):
-        '''
-        Calculates : α∗(γ∗maxaQ(S′,a)− Q(S,A))
-        - max_next_q = maxaQ(S′,a)
-        '''
-        return self._alpha * (self._discount * max_next_q - self._getQValue(state_hash, action))
-
-    def _calcNewQValue(self, state_hash: str, action: int, reward: int, max_next_q: float):
-        '''
-        '''
-        return ((1 - self._alpha) * self._getQValue(state_hash, action)) + self._alpha * (reward + (self._discount * max_next_q))
-
     def setEpsilonDecay(self, decay: float):
         '''
         Set epsilon decay value
@@ -151,6 +145,14 @@ class TTTQAgent(TTTPlayer):
         '''
         self._train = train
 
+    def _updateQValue(self, curr_action: int, curr_state: str, next_state: str):
+        try:
+            curr_q_value = self._q_table[curr_state][curr_action]
+            new_value = curr_q_value + ( self._alpha * ( (self._discount * self._getMaxQFromHash(next_state) )  - curr_q_value ) )
+            self._q_table[curr_state][curr_action] = new_value
+        except:
+            self._addHash(curr_state, TTTBoard.validMovesForHash(curr_state))
+
     def passReward(self, reward: float, state_actions: list):
         '''
         state_actions : list of state hashes and move made on state as a tuple
@@ -158,48 +160,24 @@ class TTTQAgent(TTTPlayer):
         last state_action is the terminal state and shouldn't be updated
         '''
         if self._train:
-            #print("token {} - reward {}".format(self._token, reward))
-            #pprint.pprint(state_actions)
-            #input()
-            prev_hash   = state_actions[-1][0]
-            prev_action = state_actions[-1][1] 
-            #print(state_actions[-2][0])
-            #print(state_actions[-2][1])
-            #print(state_actions[-1][0])
-            #print(state_actions[-1][1])
-            #input()
+            next_hash   = state_actions[-1][0]
+            next_action = state_actions[-1][1] 
 
-            #new_q = self._calcNewQValue(prev_hash, prev_action, reward, self._getMaxQFromHash(state_actions[-1][0]))
-            self._addReward(reward, prev_action, prev_hash)
-            new_q = self._getMaxQFromHash(prev_hash)
-            self._setQValue(new_q, prev_action, prev_hash)
-            reward = new_q
-            max_next_q = self._getMaxQFromHash(prev_hash)
+            self._setQValue(reward, next_action, next_hash)
 
             i = len(state_actions) - 2 
             # Reverse list from second to last element to beginning
             while i >= 0:
                 curr_hash   = state_actions[i][0]
                 curr_action = state_actions[i][1]
-                #print(state_actions[i][0])
-                #print(state_actions[i][1])
-                #input()
-                
-                new_q = self._calcNewQValue(curr_hash, curr_action, reward, max_next_q)
-                self._setQValue(new_q, curr_action, curr_hash)
-                reward = new_q
-                prev_hash   = curr_hash
-                prev_action = curr_action
-                max_next_q  = self._getMaxQFromHash(prev_hash)
-                
+                self._updateQValue(curr_action, curr_hash, next_hash)
+                next_hash = curr_action
+                next_action = curr_action
                 i -= 1
 
             # Decay exploration rate
             if self._epsilon >= self._epsi_min:
-                self._epsilon *= self._epsi_decay
-            return
-
-    
+                self._epsilon *= self._epsi_decay    
 
     def getMove(self, board: TTTBoard):
         '''
@@ -212,7 +190,9 @@ class TTTQAgent(TTTPlayer):
         else: return self.getRandomMove(board)
 
 
-
+'''
+Minimax tic tac toe player
+'''
 class TTTMiniMaxAgent(TTTPlayer):
 
     def __init__(self, token: str):
@@ -267,7 +247,7 @@ class TTTMiniMaxAgent(TTTPlayer):
             return 0
         if check_term == self._token:
             return 1
-        if check_term == "O":
+        if check_term is not None:
             return -1
 
         moves     = board.getCurrentOpenPositions()
@@ -279,7 +259,6 @@ class TTTMiniMaxAgent(TTTPlayer):
                 board.placeToken(move, self.getToken())
                 value = max(value, self._miniMax(board, depth + 1, False))
                 board.clearPosition(move)
-                #if len(moves) <= 2: print("Move {} value {}".format(move, value))
             return value 
         else:
             value = math.inf
@@ -287,68 +266,24 @@ class TTTMiniMaxAgent(TTTPlayer):
                 board.placeToken(move, min_token)
                 value = min(value, self._miniMax(board, depth + 1, True))
                 board.clearPosition(move)
-                #if len(moves) <= 2: print("Move {} value {}".format(move, value))
             return value 
-
 
     def passReward(self, reward: float, state_actions: list):
         pass
 
     def getMove(self, board: TTTBoard):
+        '''
+        Calls minimax function to find optimal move given a current board state
+        '''
         best_score = -math.inf
         best_move  = None
         moves      = board.getCurrentOpenPositions()
         # for each available move, copy board, make move, get value from minimax function
-        #if len(moves) == board.size():
-        #    print("random move")
-        #    return self.getRandomMove(board)
         for move in moves:
             board.placeToken(move, self.getToken())
             score = self._miniMax(board, 0, False)
             if score > best_score:
                 best_score = score
                 best_move  = move
-            board.clearPosition(move)\
+            board.clearPosition(move)
         return best_move
-
-
-
-def main():
-    """
-    mini_max = TTTMiniMaxAgent('X')  
-    player_1 = TTTQAgent('O') 
-
-    player_2 = TTTRandomAgent('X')
-
-    ttt_game     = TicTacToe(player_1, player_2)
-    minimax_game = TicTacToe(mini_max, player_1)
-
-    ttt_game.train(50000, show_results=True, p_1=player_1, p_2=player_2)
-    player_2 = TTTQAgent('X')
-    ttt_game  = TicTacToe(player_1, player_2)
-    ttt_game.train(50000, show_results=True, p_1=player_1, p_2=player_2)
-
-    minimax_game.test(50, show_results=True, verbose=True)
-    
-
-    
-
-    
-    for i in range(1000):
-        print("| ---------- TRAINING ---------- |")
-        ttt_game.train(100, p_2=True)
-        print("Testing after training for {} games".format(i*100))
-        ttt_game.test(100, show_results=True)
-    """
-    player_1 = TTTMiniMaxAgent('X')
-    player_2 = TTTPlayer('O')
-    ttt_game = TicTacToe(player_1, player_2)
-    ttt_game.test(10, show_results=True, verbose=True)
-    #for i in range(10000):
-    #    print("Trained for {} games".format(i+1))
-    #    ttt_game.train(1, p_1=True)
-    #    ttt_game.test(1000, show_results=True)
-    
-
-if __name__ == '__main__':
-    main()
