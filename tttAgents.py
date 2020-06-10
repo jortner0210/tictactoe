@@ -165,19 +165,32 @@ class TTTQAgent(TTTPlayer):
         last state_action is the terminal state and shouldn't be updated
         '''
         if self._train:
-            prev_hash   = state_actions[-2][0]
-            prev_action = state_actions[-2][1] 
+            #print("token {} - reward {}".format(self._token, reward))
+            #pprint.pprint(state_actions)
+            #input()
+            prev_hash   = state_actions[-1][0]
+            prev_action = state_actions[-1][1] 
+            #print(state_actions[-2][0])
+            #print(state_actions[-2][1])
+            #print(state_actions[-1][0])
+            #print(state_actions[-1][1])
+            #input()
 
-            new_q = self._calcNewQValue(prev_hash, prev_action, reward, self._getMaxQFromHash(state_actions[-1][0]))
+            #new_q = self._calcNewQValue(prev_hash, prev_action, reward, self._getMaxQFromHash(state_actions[-1][0]))
+            self._addReward(reward, prev_action, prev_hash)
+            new_q = self._getMaxQFromHash(prev_hash)
             self._setQValue(new_q, prev_action, prev_hash)
             reward = new_q
             max_next_q = self._getMaxQFromHash(prev_hash)
 
-            i = len(state_actions) - 3 
+            i = len(state_actions) - 2 
             # Reverse list from second to last element to beginning
             while i >= 0:
                 curr_hash   = state_actions[i][0]
                 curr_action = state_actions[i][1]
+                #print(state_actions[i][0])
+                #print(state_actions[i][1])
+                #input()
                 
                 new_q = self._calcNewQValue(curr_hash, curr_action, reward, max_next_q)
                 self._setQValue(new_q, curr_action, curr_hash)
@@ -219,8 +232,8 @@ class TTTMiniMaxAgent(TTTPlayer):
     def __init__(self, token: str):
         TTTPlayer.__init__(self, token)
         self._rewards = {
-            token : 1,
-            "draw": 0
+            self._token: 1,
+            "draw"     : 0
         }
 
     def _getMinToken(self, board: TTTBoard):
@@ -239,12 +252,10 @@ class TTTMiniMaxAgent(TTTPlayer):
         '''
         # Check for winner
         winner = board.checkForWinner()
-        if winner is not None:
-            return winner
         # Check for draw
         if board.isFull():
             return "draw"
-        return None
+        return winner
 
     def _miniMax(self, board: TTTBoard, depth: int, maximizing: bool):
         '''
@@ -264,29 +275,31 @@ class TTTMiniMaxAgent(TTTPlayer):
                 return value
         '''
         # Check for terminal state and return reward if true
-        #if not depth: return 0
         check_term = self._isTerminalState(board)
-        if check_term is not None:
-            try:
-                return self._rewards[check_term]
-            except:
-                return -1
+        if check_term == self._token:
+            return 1 
+        elif check_term == "draw":
+            return 0
+        elif check_term != None:
+            return -1 
+
         moves     = board.getCurrentOpenPositions()
         min_token = self._getMinToken(board)
+  
         if maximizing:
             value = -999
             for move in moves:
-                next_board_state = board.copy()
-                next_board_state.placeToken(move, self.getToken())
-                value = max(value, self._miniMax(next_board_state, depth + 1, False))
-            return value
+                board.placeToken(move, self.getToken())
+                value = max(value, self._miniMax(board, depth + 1, False))
+                board.clearPosition(move)
+            return value #- depth
         else:
             value = 999
             for move in moves:
-                next_board_state = board.copy()
-                next_board_state.placeToken(move, min_token)
-                value = min(value, self._miniMax(next_board_state, depth + 1, True))
-            return value
+                board.placeToken(move, min_token)
+                value = min(value, self._miniMax(board, depth + 1, True))
+                board.clearPosition(move)
+            return value #+ depth
 
 
     def passReward(self, reward: float, state_actions: list):
@@ -294,30 +307,52 @@ class TTTMiniMaxAgent(TTTPlayer):
 
     def getMove(self, board: TTTBoard):
         best_score = -999
-        best_move  = -1
+        best_move  = None
         moves      = board.getCurrentOpenPositions()
         # for each available move, copy board, make move, get value from minimax function
         for move in moves:
-            next_board_state = board.copy()
-            next_board_state.placeToken(move, self.getToken())
-            score = self._miniMax(next_board_state, 0, False)
+            board.placeToken(move, self.getToken())
+            score = self._miniMax(board, 0, False)
             if score > best_score:
                 best_score = score
                 best_move  = move
+            board.clearPosition(move)
         return best_move
 
 
 
 def main():
-  
-    player_1 = TTTMiniMaxAgent('X')    
-    player_2 = TTTPlayer('O')
-    ttt_game = TicTacToe(player_1, player_2)
+    """
+    mini_max = TTTMiniMaxAgent('X')  
+    player_1 = TTTQAgent('O') 
 
-    ttt_game.test(1, verbose=True)
+    player_2 = TTTRandomAgent('X')
+
+    ttt_game     = TicTacToe(player_1, player_2)
+    minimax_game = TicTacToe(mini_max, player_1)
+
+    ttt_game.train(50000, show_results=True, p_1=player_1, p_2=player_2)
+    player_2 = TTTQAgent('X')
+    ttt_game  = TicTacToe(player_1, player_2)
+    ttt_game.train(50000, show_results=True, p_1=player_1, p_2=player_2)
+
+    minimax_game.test(50, show_results=True, verbose=True)
     
 
+    
 
+    
+    for i in range(1000):
+        print("| ---------- TRAINING ---------- |")
+        ttt_game.train(100, p_2=True)
+        print("Testing after training for {} games".format(i*100))
+        ttt_game.test(100, show_results=True)
+    """
+    player_1 = TTTMiniMaxAgent('X')
+    player_2 = TTTPlayer('O')
+    ttt_game = TicTacToe(player_1, player_2)
+    ttt_game.test(10, show_results=True, verbose=True)
+    
 
 if __name__ == '__main__':
     main()

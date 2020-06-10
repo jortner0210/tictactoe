@@ -156,6 +156,12 @@ class TTTBoard:
             return True
         else: return False
 
+    def clearPosition(self, position: int):
+        '''
+        Removes token from given postiion
+        '''
+        if self._inBounds(position): self._board[position] = 0
+
     def isValidMove(self, position: int):
         '''
         Ensures the position is available and the position is within
@@ -268,7 +274,8 @@ class TicTacToe:
         for player in self._players:
             player["state_actions"].clear()
 
-    def _runGames(self, train: bool, num_games: int, verbose: bool = False, p_1: bool = False, p_2: bool = False):
+    def _runGames(self, train: bool, num_games: int, verbose: bool = False, 
+                  show_results: bool = False, p_1: bool = False, p_2: bool = False):
         '''
         Disable agent training and play through a number of games
         '''
@@ -277,15 +284,13 @@ class TicTacToe:
                 player_1 = [p["player"] for p in self._players if p["player_num"] == 1][0]
                 player_1.trainAgent(train)
             except:
-                print("Can't change player 1's training memeber")
-                return None
+                pass
         if p_2:
             try:
                 player_2 = [p["player"] for p in self._players if p["player_num"] == 2][0]
                 player_2.trainAgent(train)
             except:
-                print("Can't change player 2's training memeber")
-                return None
+                pass
 
         results = []
         self._display = verbose
@@ -293,7 +298,7 @@ class TicTacToe:
             game_results = self.playGame()
             game_results["game_num"] = len(results) + 1
             results.append(game_results)
-        self.displayResults(results)
+        if show_results: self.displayResults(results)
         self._display = False
         return results
 
@@ -349,17 +354,18 @@ class TicTacToe:
         '''
         return self._board.getHash()
 
-    def test(self, num_games: int, verbose: bool = False, p_1: bool = False, p_2: bool = False):
+    def test(self, num_games: int, show_results: bool = False, verbose: bool = False):
         '''
         Disable agent training and play through a number of games
         '''        
-        self._runGames(False, num_games, verbose=verbose, p_1=p_1, p_2=p_2)
+        return self._runGames(False, num_games, verbose=verbose, show_results=show_results, p_1=True, p_2=True)
 
-    def train(self, num_games: int, verbose: bool = False, p_1: bool = False, p_2: bool = False):
+    def train(self, num_games: int, show_results: bool = False, verbose: bool = False, p_1: bool = False, p_2: bool = False):
         '''
         Enable training for players and run
         '''
-        self._runGames(True, num_games, verbose=verbose, p_1=p_1, p_2=p_2)
+        return self._runGames(True, num_games, verbose=verbose, show_results=show_results, p_1=p_1, p_2=p_2)
+        
 
     def playGame(self):
         '''
@@ -368,7 +374,7 @@ class TicTacToe:
         Players are shuffled before the start of each game
         '''
         self._board.reset()
-        self._shufflePlayers()
+        #self._shufflePlayers()
         game_over   = False
         curr_player = 0
         if self._display: 
