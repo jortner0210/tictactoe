@@ -5,6 +5,7 @@ import time
 import pprint
 import random
 import operator
+import math
 
 
 '''
@@ -17,14 +18,6 @@ class TTTRandomAgent(TTTPlayer):
 
     def getMove(self, board: TTTBoard):
         return self.getRandomMove(board)
-
-    def getRandomMove(self, board: TTTBoard):
-        '''
-        Returns randomly chosen move
-        '''
-        valid_moves = board.getCurrentOpenPositions()
-        rand_idx    = random.randint(0, len(valid_moves) - 1)
-        return valid_moves[rand_idx]
 
 
 '''
@@ -206,14 +199,7 @@ class TTTQAgent(TTTPlayer):
                 self._epsilon *= self._epsi_decay
             return
 
-    def getRandomMove(self, board: TTTBoard):
-        '''
-        Returns randomly chosen move
-        '''
-        valid_moves = board.getCurrentOpenPositions()
-        rand_idx    = random.randint(0, len(valid_moves) - 1)
-        #print("Valid Moves: {}".format(valid_moves))
-        return valid_moves[rand_idx]
+    
 
     def getMove(self, board: TTTBoard):
         '''
@@ -250,12 +236,13 @@ class TTTMiniMaxAgent(TTTPlayer):
         If terminal state, return result
         otherwise return None
         '''
-        # Check for winner
+        full = board.isFull()
         winner = board.checkForWinner()
-        # Check for draw
-        if board.isFull():
+        if full and winner is not None:
+            return winner
+        if full and winner is None:
             return "draw"
-        return winner
+        return None
 
     def _miniMax(self, board: TTTBoard, depth: int, maximizing: bool):
         '''
@@ -276,47 +263,52 @@ class TTTMiniMaxAgent(TTTPlayer):
         '''
         # Check for terminal state and return reward if true
         check_term = self._isTerminalState(board)
-        if check_term == self._token:
-            return 1 
-        elif check_term == "draw":
+        if check_term == "draw":
             return 0
-        elif check_term != None:
-            return -1 
+        if check_term == self._token:
+            return 1
+        if check_term == "O":
+            return -1
 
         moves     = board.getCurrentOpenPositions()
         min_token = self._getMinToken(board)
-  
+    
         if maximizing:
-            value = -999
+            value = -math.inf
             for move in moves:
                 board.placeToken(move, self.getToken())
                 value = max(value, self._miniMax(board, depth + 1, False))
                 board.clearPosition(move)
-            return value #- depth
+                #if len(moves) <= 2: print("Move {} value {}".format(move, value))
+            return value 
         else:
-            value = 999
+            value = math.inf
             for move in moves:
                 board.placeToken(move, min_token)
                 value = min(value, self._miniMax(board, depth + 1, True))
                 board.clearPosition(move)
-            return value #+ depth
+                #if len(moves) <= 2: print("Move {} value {}".format(move, value))
+            return value 
 
 
     def passReward(self, reward: float, state_actions: list):
         pass
 
     def getMove(self, board: TTTBoard):
-        best_score = -999
+        best_score = -math.inf
         best_move  = None
         moves      = board.getCurrentOpenPositions()
         # for each available move, copy board, make move, get value from minimax function
+        #if len(moves) == board.size():
+        #    print("random move")
+        #    return self.getRandomMove(board)
         for move in moves:
             board.placeToken(move, self.getToken())
             score = self._miniMax(board, 0, False)
             if score > best_score:
                 best_score = score
                 best_move  = move
-            board.clearPosition(move)
+            board.clearPosition(move)\
         return best_move
 
 
@@ -352,6 +344,10 @@ def main():
     player_2 = TTTPlayer('O')
     ttt_game = TicTacToe(player_1, player_2)
     ttt_game.test(10, show_results=True, verbose=True)
+    #for i in range(10000):
+    #    print("Trained for {} games".format(i+1))
+    #    ttt_game.train(1, p_1=True)
+    #    ttt_game.test(1000, show_results=True)
     
 
 if __name__ == '__main__':

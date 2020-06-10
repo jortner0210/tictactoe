@@ -52,6 +52,12 @@ class TTTBoard:
             if self._player_tokens[key] == token: return key
         return None
 
+    def size(self):
+        '''
+        Returns the size of the board
+        '''
+        return (self._rows * self._cols)
+
     def getPlayerTokens(self):
         '''
         Returns list of all player tokens
@@ -216,6 +222,14 @@ class TTTPlayer:
     def passReward(self, reward: float, state_actions: list):
         pass
 
+    def getRandomMove(self, board: TTTBoard):
+        '''
+        Returns randomly chosen move
+        '''
+        valid_moves = board.getCurrentOpenPositions()
+        rand_idx    = random.randint(0, len(valid_moves) - 1)
+        return valid_moves[rand_idx]
+
     def getMove(self, board: TTTBoard):
         '''
         Return player move when a valid input is given
@@ -374,7 +388,7 @@ class TicTacToe:
         Players are shuffled before the start of each game
         '''
         self._board.reset()
-        #self._shufflePlayers()
+        self._shufflePlayers()
         game_over   = False
         curr_player = 0
         if self._display: 
