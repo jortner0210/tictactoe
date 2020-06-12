@@ -49,8 +49,8 @@ class TTTQAgent(TTTPlayer):
     2) play tictactoe and at the end of each game, update 
     q values of all move in game according to final game result
     2a) last move -> win = 1, loss = 0, draw = 0.5
-    2b) every other move -> Q(S,A) = Q(S,A)+α∗(γ∗maxaQ(S′,a)− Q(S,A))
-                         -> Q(S,A)=(1−α)∗Q(S,A)+α∗γ∗maxaQ(S′,a)
+    2b) every other move -> Q(S,A) = Q(S, A) + α ∗ ( γ ∗ maxaQ(S′, a) − Q(S ,A) )
+                         -> Q(S,A) = ( 1 − α ) ∗ Q(S,A) + α ∗ γ ∗ maxaQ(S′,a)
         - S′ : next state
         - α  : learning rate - default = 0.9
         - γ  : discount factor - default = 0.95
@@ -59,7 +59,7 @@ class TTTQAgent(TTTPlayer):
     def __init__(self, token: str):
         TTTPlayer.__init__(self, token)
         self._train       = False
-        self._epsilon     = 1.0
+        self._epsilon     = 0.95
         self._epsi_decay  = 0.9993
         self._epsi_min    = 0.005
         self._alpha       = 0.2
@@ -287,3 +287,13 @@ class TTTMiniMaxAgent(TTTPlayer):
                 best_move  = move
             board.clearPosition(move)
         return best_move
+
+
+if __name__ == "__main__":
+    player_1 = TTTQAgent("X")
+    player_2 = TTTRandomAgent("O")
+    game     = TicTacToe(player_1, player_2)
+
+    game.train(20000, show_results=True, train_p_1=True)
+    #game.train(10000, show_results=True, p_1=True)
+    

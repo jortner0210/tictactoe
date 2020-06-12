@@ -1,8 +1,11 @@
 from abc import ABC, abstractmethod
-import random
+import matplotlib.pyplot as plt
 import numpy as np
+import random
+import pprint
 import copy
 import time
+from tqdm import tqdm
 
 '''
 Board Class for TicTacToe Game
@@ -282,31 +285,55 @@ class TicTacToe:
         for player in self._players:
             player["state_actions"].clear()
 
-    def _runGames(self, train: bool, num_games: int, verbose: bool = False, 
-                  show_results: bool = False, p_1: bool = False, p_2: bool = False):
+    def _runGames(self, num_games: int, show_game: bool = False, show_results: bool = False,
+                  train_p_1: bool = False, train_p_2: bool = False):
         '''
         Disable agent training and play through a number of games
         '''
-        if p_1:
-            try:
-                player_1 = [p["player"] for p in self._players if p["player_num"] == 1][0]
-                player_1.trainAgent(train)
-            except:
-                pass
-        if p_2:
-            try:
-                player_2 = [p["player"] for p in self._players if p["player_num"] == 2][0]
-                player_2.trainAgent(train)
-            except:
-                pass
+        player_1 = [p["player"] for p in self._players if p["player_num"] == 1][0]
+        player_2 = [p["player"] for p in self._players if p["player_num"] == 2][0]
 
         results = []
-        self._display = verbose
-        for game in range(num_games):
+        # win percent for each batch of tests
+        p_1_results   = []
+        p_2_results   = []
+        draw_results  = []
+
+        mod = 1
+        if num_games > 20: mod = num_games / 20
+        
+        self._display = show_game
+        for game in tqdm(range(num_games)):
+            # try to set agent to train - some agents are not trainable
+            if train_p_1:
+                try: player_1.trainAgent(True)
+                except: pass
+            if train_p_2:
+                try: player_2.trainAgent(True)
+                except: pass
+            # run game
             game_results = self.playGame()
             game_results["game_num"] = len(results) + 1
             results.append(game_results)
-        if show_results: self.displayResults(results)
+            # run 500 tests if show_results argument is True
+            if show_results and not (game + 1) % mod:
+                test_results = self.test(500)
+                p_1_wins = 0
+                p_2_wins = 0
+                draws    = 0
+                for x in range(len(test_results)):
+                    game = test_results[x]
+                    if game["winner"] == player_1.getToken():
+                        p_1_wins += 1
+                    elif game["winner"] == "draw":
+                        draws += 1
+                    else:
+                        p_2_wins += 1
+                p_1_results.append(p_1_wins/len(test_results))
+                p_2_results.append(p_2_wins/len(test_results))
+                draw_results.append(draws/len(test_results))
+
+        if show_results: self.graphRewards(p_1_results, p_2_results, draw_results, x_scale=mod)
         self._display = False
         return results
 
@@ -324,7 +351,24 @@ class TicTacToe:
         for game in self._results:
             print("g_{}:\t{}".format(game["game_num"], game["winner"]))
         print()
+
+    def graphRewards(self, p_1: list, p_2: list, draws: list, x_scale: int = 1):
+        '''
+        Graphs the accumulated rewards of each game
+        '''
+        x = [(x + 1) * x_scale for x in range(len(p_1))]
+        fig, (ax1, ax2, ax3) = plt.subplots(3, sharex=True)
+        ax1.set_title("Player 1")
+        ax2.set_title("Player 2")
+        ax3.set_title("Draws")
+        ax1.plot(x, p_1, "tab:blue")
+        ax2.plot(x, p_2, "tab:red")
+        ax3.plot(x, draws, "tab:green")
+        fig.text(0.5, 0.04, "Games Trained", ha="center", va="center")
+        fig.text(0.06, 0.5, "Percent Win of 500 Games Tested", ha="center", va="center", rotation="vertical")     
+        plt.show()
     
+    @staticmethod
     def displayResults(self, results_struct: list):
         '''
         Displays the percent win of each player
@@ -362,17 +406,31 @@ class TicTacToe:
         '''
         return self._board.getHash()
 
-    def test(self, num_games: int, show_results: bool = False, verbose: bool = False):
+    def test(self, num_games: int, show_results: bool = False, show_game: bool = False):
         '''
         Disable agent training and play through a number of games
-        '''        
-        return self._runGames(False, num_games, verbose=verbose, show_results=show_results, p_1=True, p_2=True)
+        '''       
+        #return self._runGames(False, num_games, show_game=show_game, show_results=show_results, p_1=True, p_2=True, test=False)
+        player_1 = [p["player"] for p in self._players if p["player_num"] == 1][0]
+        player_2 = [p["player"] for p in self._players if p["player_num"] == 2][0]
 
-    def train(self, num_games: int, show_results: bool = False, verbose: bool = False, p_1: bool = False, p_2: bool = False):
+        results = []
+
+        for game in range(num_games):
+            try: player_1.trainAgent(False)
+            except: pass
+            try: player_2.trainAgent(False)
+            except: pass
+            game_results = self.playGame()
+            game_results["game_num"] = len(results) + 1
+            results.append(game_results)
+        return results
+
+    def train(self, num_games: int, test: bool = False, show_results: bool = False, show_game: bool = False, train_p_1: bool = False, train_p_2: bool = False):
         '''
         Enable training for players and run
         '''
-        return self._runGames(True, num_games, verbose=verbose, show_results=show_results, p_1=p_1, p_2=p_2)
+        return self._runGames(num_games, show_game=show_game, show_results=show_results, train_p_1=train_p_1, train_p_2=train_p_2)
         
     def playGame(self):
         '''
