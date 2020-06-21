@@ -365,7 +365,7 @@ class TicTacToe:
         ax2.plot(x, p_2, "tab:red")
         ax3.plot(x, draws, "tab:green")
         fig.text(0.5, 0.04, "Games Trained", ha="center", va="center")
-        fig.text(0.06, 0.5, "Percent Win of 500 Games Tested", ha="center", va="center", rotation="vertical")     
+        fig.text(0.06, 0.5, "Win Rate - 500 Games", ha="center", va="center", rotation="vertical")     
         plt.show()
     
     @staticmethod
@@ -415,7 +415,7 @@ class TicTacToe:
         player_2 = [p["player"] for p in self._players if p["player_num"] == 2][0]
 
         results = []
-
+        if show_game: self._display = True
         for game in range(num_games):
             try: player_1.trainAgent(False)
             except: pass
@@ -424,9 +424,10 @@ class TicTacToe:
             game_results = self.playGame()
             game_results["game_num"] = len(results) + 1
             results.append(game_results)
+        self._display = False
         return results
 
-    def train(self, num_games: int, test: bool = False, show_results: bool = False, show_game: bool = False, train_p_1: bool = False, train_p_2: bool = False):
+    def train(self, num_games: int, show_results: bool = False, show_game: bool = False, train_p_1: bool = False, train_p_2: bool = False):
         '''
         Enable training for players and run
         '''
@@ -472,6 +473,8 @@ class TicTacToe:
             if winner is not None:
                 # game over : winner
                 game_data["winner"] = winner
+                #self._players[0]["state_actions"].append((self._board.getHash(), -1))
+                #self._players[1]["state_actions"].append((self._board.getHash(), -1))
                 for player in self._players:
                     if player["player"].getToken() == winner:
                         player["player"].passReward(1, player["state_actions"])
@@ -481,6 +484,8 @@ class TicTacToe:
                 break
             # check for draw
             if self._board.isFull():
+                #self._players[0]["state_actions"].append((self._board.getHash(), -1))
+                #self._players[1]["state_actions"].append((self._board.getHash(), -1))
                 # game over : draw
                 game_data["winner"] = "draw"
                 for player in self._players:
@@ -494,8 +499,8 @@ class TicTacToe:
         curr_hash = self._board.getHash()
         game_data["board_states"].append(self._board.copy())
         game_data["board_hashes"].append(curr_hash)
-        self._players[0]["state_actions"].append((curr_hash, -1))
-        self._players[1]["state_actions"].append((curr_hash, -1))
+        #self._players[0]["state_actions"].append((curr_hash, -1))
+        #self._players[1]["state_actions"].append((curr_hash, -1))
 
         self._clearStateActions()
         return game_data

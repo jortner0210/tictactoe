@@ -7,7 +7,6 @@ import random
 import operator
 import math
 
-
 class TTTHumanAgent(TTTPlayer):
 
     def passReward(self, reward: float, state_actions: list):
@@ -59,12 +58,11 @@ class TTTQAgent(TTTPlayer):
     def __init__(self, token: str):
         TTTPlayer.__init__(self, token)
         self._train       = False
-        self._epsilon     = 0.95
+        self._epsilon     = 1.0
         self._epsi_decay  = 0.9993
         self._epsi_min    = 0.005
-        self._alpha       = 0.2
+        self._alpha       = 0.5
         self._discount    = 0.95
-        self._init_q_val  = 0.5
         self._q_table     = { 
             # "hash": { pos_val: q_val }, ...
         }
@@ -88,9 +86,13 @@ class TTTQAgent(TTTPlayer):
     def _getMaxQFromHash(self, state_hash: str):
         try:
             moves = self._q_table[state_hash]
+            #print(state_hash, moves, sep="\n")
+            #input()
             return max([moves[key] for key in moves.keys()])
         except:
-            return self._init_q_val
+            moves = TTTBoard.validMovesForHash(state_hash)
+            self._addHash(state_hash, moves)
+            return self._getMaxQFromHash(state_hash)
 
     def _addHash(self, board_hash: str, available_moves: list):
         '''
@@ -116,7 +118,7 @@ class TTTQAgent(TTTPlayer):
         Set state action's q value to new value
         '''
         try:
-            self._q_table[state_hash][action] = new_value
+            self._q_table[state_hash][action] += new_value
         except:
             self._addHash(state_hash, TTTBoard.validMovesForHash(state_hash))
             self._q_table[state_hash][action] = new_value
@@ -160,6 +162,10 @@ class TTTQAgent(TTTPlayer):
         last state_action is the terminal state and shouldn't be updated
         '''
         if self._train:
+            #print(self._token)
+            #print(state_actions)
+            #print("reward {}".format(reward))
+            #input()
             next_hash   = state_actions[-1][0]
             next_action = state_actions[-1][1] 
 
@@ -186,8 +192,10 @@ class TTTQAgent(TTTPlayer):
                  choose move with highest value
                  if multiple moves have the same value, pick randomly
         '''
-        if random.uniform(0, 1) > self._epsilon: return self._getMaxQMove(board)
+        if random.uniform(0, 1) > self._epsilon: 
+            return self._getMaxQMove(board)
         else: return self.getRandomMove(board)
+        
 
 
 '''
@@ -200,6 +208,9 @@ class TTTMiniMaxAgent(TTTPlayer):
         self._rewards = {
             self._token: 1,
             "draw"     : 0
+        }
+        self._best_moves = {
+            # state hash : move
         }
 
     def _getMinToken(self, board: TTTBoard):
@@ -220,9 +231,26 @@ class TTTMiniMaxAgent(TTTPlayer):
         winner = board.checkForWinner()
         if full and winner is not None:
             return winner
+        if not full and winner is not None:
+            return winner
         if full and winner is None:
             return "draw"
         return None
+
+    def _add_best_move(self, state_hash: str, best_move: int):
+        '''
+        '''
+        self._best_moves[state_hash] = best_move
+
+    def _checkSavedStates(self, board_hash: str):
+        '''
+        '''
+        try:
+            # state seen, return best move
+            move = self._best_moves[board_hash]
+            return move
+        except:
+            return None
 
     def _miniMax(self, board: TTTBoard, depth: int, maximizing: bool):
         '''
@@ -252,7 +280,7 @@ class TTTMiniMaxAgent(TTTPlayer):
 
         moves     = board.getCurrentOpenPositions()
         min_token = self._getMinToken(board)
-    
+
         if maximizing:
             value = -math.inf
             for move in moves:
@@ -276,8 +304,10 @@ class TTTMiniMaxAgent(TTTPlayer):
         Calls minimax function to find optimal move given a current board state
         '''
         best_score = -math.inf
-        best_move  = None
+        best_move  = self._checkSavedStates(board.getHash())
         moves      = board.getCurrentOpenPositions()
+        if best_move is not None: 
+            return best_move
         # for each available move, copy board, make move, get value from minimax function
         for move in moves:
             board.placeToken(move, self.getToken())
@@ -285,15 +315,16 @@ class TTTMiniMaxAgent(TTTPlayer):
             if score > best_score:
                 best_score = score
                 best_move  = move
+                
             board.clearPosition(move)
+        self._add_best_move(board.getHash(), best_move)
         return best_move
 
 
 if __name__ == "__main__":
     player_1 = TTTQAgent("X")
-    player_2 = TTTRandomAgent("O")
+    player_2 = TTTMiniMaxAgent("O")
     game     = TicTacToe(player_1, player_2)
 
-    game.train(20000, show_results=True, train_p_1=True)
-    #game.train(10000, show_results=True, p_1=True)
-    
+
+    game.train(50000, show_results=True, train_p_1=True)
